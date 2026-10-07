@@ -136,6 +136,22 @@ shaka.extern.MsfSegmenter = class {
    * @exportDoc
    */
   push(obj) {}
+
+  /**
+   * Releases whatever the segmenter holds. Called once, when the segmenter is
+   * dropped: on every resubscribe, and when the stream's segment index closes.
+   * No further push() follows.
+   *
+   * A segmenter is created per segment index, so a track that is unsubscribed
+   * and resubscribed -- which an ABR variant switch does -- gets a new one each
+   * time. A packaging whose segmenter owns anything the garbage collector will
+   * not take back by itself, a Worker or a WebAssembly instance for instance,
+   * has nowhere else to let go of it. Packagings that hold only plain state
+   * leave this empty.
+   *
+   * @exportDoc
+   */
+  release() {}
 };
 
 
