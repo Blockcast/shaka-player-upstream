@@ -105,6 +105,54 @@ filterDescribe('shaka.msf.draft18.MessageWriter', isMSFSupported, () => {
           /** @type {!Uint8Array} */(param.value))).toEqual([0x03, 0x07, 0x03]);
     });
 
+    it('should encode Next Group Start as a type with no Location', () => {
+      // Section 5.1.2: Next Group Start (0x1) derives its Start Location at
+      // the publisher -- {Largest Object.Group + 1, 0}, reported back in
+      // SUBSCRIBE_OK -- so the filter type is the whole value. A Location
+      // appended to it describes no filter the draft defines.
+      const param = writer.locationFilterParam(
+          null, shaka.config.MsfFilterType.NEXT_GROUP_START);
+
+      expect(param.type).toBe(BigInt(0x21));
+      expect(Array.from(
+          /** @type {!Uint8Array} */(param.value))).toEqual([0x01]);
+    });
+
+    it('should encode Largest Object as a type with no Location', () => {
+      // The other derived type, for the same reason: its start is
+      // {Largest Object.Group, Largest Object.Object + 1}.
+      const param = writer.locationFilterParam(
+          null, shaka.config.MsfFilterType.LARGEST_OBJECT);
+
+      expect(Array.from(
+          /** @type {!Uint8Array} */(param.value))).toEqual([0x02]);
+    });
+
+    it('should ignore a Location passed with a derived filter type', () => {
+      // A caller that has a Location to hand must not accidentally append it
+      // to a derived filter, which would make the value three varints and no
+      // longer the filter the type names.
+      const param = writer.locationFilterParam(
+          {group: BigInt(7), object: BigInt(3)},
+          shaka.config.MsfFilterType.NEXT_GROUP_START);
+
+      expect(Array.from(
+          /** @type {!Uint8Array} */(param.value))).toEqual([0x01]);
+    });
+
+    it('should default to AbsoluteStart when no type is given', () => {
+      // Passing a Location and nothing else is what every existing caller
+      // does, and it means the absolute filter.
+      const location = {group: BigInt(7), object: BigInt(3)};
+
+      expect(Array.from(/** @type {!Uint8Array} */(
+        writer.locationFilterParam(location).value)))
+          .toEqual(Array.from(/** @type {!Uint8Array} */(
+            writer.locationFilterParam(
+                location,
+                shaka.config.MsfFilterType.ABSOLUTE_START).value)));
+    });
+
     it('should ride along in a SUBSCRIBE as an odd-keyed parameter', () => {
       writer.marshalSubscribe({
         requestId: BigInt(1),

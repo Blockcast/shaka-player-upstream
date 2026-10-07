@@ -107,6 +107,66 @@ filterDescribe('shaka.msf.draft20.MessageWriter', isMSFSupported, () => {
           /** @type {!Uint8Array} */(param.value))).toEqual([0x07, 0x03]);
     });
 
+    it('should encode Next Group Start as a single zero field', () => {
+      // Draft-20 carries no Filter Type. The ONE-field form is relative:
+      // "If only StartGroup is present, it is a relative number of groups
+      // prior to the Next Group, hence the start Location is
+      // {Largest Object.Group + 1 - StartGroup, 0}. For example:
+      // StartGroup=0 will start at the Next Group" (section 5.1.2).
+      //
+      // So zero groups prior to the Next Group is the Next Group: the same
+      // filter draft-18 spells as the type 0x1 Next Group Start, which
+      // draft-20 re-encoded rather than introduced.
+      const param = writer.locationFilterParam(
+          null, shaka.config.MsfFilterType.NEXT_GROUP_START);
+
+      expect(param.type).toBe(BigInt(0x21));
+      expect(Array.from(
+          /** @type {!Uint8Array} */(param.value))).toEqual([0x00]);
+    });
+
+    it('should leave Largest Object to the omitted parameter', () => {
+      // Draft-20 could spell it as two zeroed fields, which section 5.1.2
+      // reads as the Next Object. Draft-22 inherits this method and numbers
+      // its Filter Types by field count, so two fields there are an absolute
+      // {0, 0} -- the start of the track, the opposite end of the stream.
+      // Omitting the parameter is the publisher default in every draft of
+      // this family, so that is what the session sends and nothing asks this
+      // writer to encode it.
+      expect(() => writer.locationFilterParam(
+          null, shaka.config.MsfFilterType.LARGEST_OBJECT)).toThrow();
+    });
+
+    it('should not spell Next Group Start the draft-18 way', () => {
+      // Draft-18 writes the filter type 0x1; draft-20 has no type field at
+      // all, so a writer that inherited the draft-18 encoding would send a
+      // relative StartGroup of 1 here -- the CURRENT group, one group too
+      // early, and a silently wrong join rather than a visible failure.
+      const param = writer.locationFilterParam(
+          null, shaka.config.MsfFilterType.NEXT_GROUP_START);
+
+      expect(Array.from(
+          /** @type {!Uint8Array} */(param.value))).not.toEqual([0x01]);
+    });
+
+    it('should agree with fillCurrentGroupParam on the relative form', () => {
+      // fillCurrentGroupParam() already writes the one-field relative form,
+      // with StartGroup=1 for the current group. Next Group Start is the
+      // same encoding one group later, so the two must differ by exactly
+      // that byte: 1 for the current group, 0 for the next one.
+      expect(Array.from(/** @type {!Uint8Array} */(
+        writer.fillCurrentGroupParam().value))).toEqual([
+        0x01, // inner parameter count
+        0x21, 0x01, 0x01, // LOCATION_FILTER, 1 byte, StartGroup = 1
+      ]);
+
+      expect(Array.from(/** @type {!Uint8Array} */(
+        writer.locationFilterParam(
+            null,
+            shaka.config.MsfFilterType.NEXT_GROUP_START).value)))
+          .toEqual([0x00]);
+    });
+
     it('should not encode the draft-18 filter type', () => {
       // The same request in draft-18 leads with the Filter Type, so a writer
       // that inherited that encoding would send a Start Group of 3 here.

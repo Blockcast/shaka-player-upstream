@@ -234,6 +234,53 @@ filterDescribe('shaka.msf.draft18.Session', isMSFSupported, () => {
           ]);
         });
 
+    /**
+     * Subscribes with a configured filter type and returns the parameter
+     * bytes of the SUBSCRIBE that went out.
+     *
+     * @param {shaka.config.MsfFilterType} filterType
+     * @return {!Promise<!Array<number>>}
+     */
+    async function paramsForFilter(filterType) {
+      session.configure(
+          /** @type {!shaka.extern.MsfManifestConfiguration} */ (
+            /** @type {?} */ ({subscribeFilterType: filterType})));
+
+      const subscribed = session.subscribe(NAMESPACE, TRACK, () => {});
+      await shaka.test.Util.shortDelay();
+      responses.enqueue(subscribeOk());
+      await subscribed;
+
+      const payload = subscribePayload();
+      return Array.from(payload.subarray(
+          1 + 1 + 1 + NAMESPACE[0].length + 1 + TRACK.length));
+    }
+
+    it('sends the configured Next Group Start filter', async () => {
+      // manifest.msf.subscribeFilterType is declared, defaulted and offered
+      // in the demo UI, and before this it was read by nothing: a user who
+      // asked for NEXT_GROUP_START was silently given the publisher default.
+      expect(await paramsForFilter(
+          shaka.config.MsfFilterType.NEXT_GROUP_START)).toEqual([
+        0x03, // Parameter count
+        0x10, 0x01, // FORWARD = 1
+        0x10, 0x00, // delta 0x10 -> SUBSCRIBER_PRIORITY = 0
+        0x01, 0x01, 0x01, // delta 0x01 -> SUBSCRIPTION_FILTER, 1 byte, 0x1
+      ]);
+    });
+
+    it('leaves Largest Object as no filter at all', async () => {
+      // It is the publisher default, so the shortest legal SUBSCRIBE already
+      // asks for it. Spelling it out would be a behaviour change for every
+      // player that has never set the config.
+      expect(await paramsForFilter(
+          shaka.config.MsfFilterType.LARGEST_OBJECT)).toEqual([
+        0x02, // Parameter count
+        0x10, 0x01, // FORWARD = 1
+        0x10, 0x00, // delta 0x10 -> SUBSCRIBER_PRIORITY = 0
+      ]);
+    });
+
     it('resolves with the Track Alias', async () => {
       const subscribed = session.subscribe(NAMESPACE, TRACK, () => {});
       await shaka.test.Util.shortDelay();

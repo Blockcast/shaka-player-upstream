@@ -1717,6 +1717,14 @@ shaka.extern.HlsManifestConfiguration;
  *   The filter type used in MoQ SUBSCRIBE messages. Controls how the relay
  *   delivers data to the subscriber.
  *   <br>
+ *   This selects where a subscription <i>joins</i>, so only the two types
+ *   that derive their start Location at the publisher are meaningful here:
+ *   <code>LARGEST_OBJECT</code> joins mid-group at the live edge, and
+ *   <code>NEXT_GROUP_START</code> waits for the next group boundary.
+ *   <code>ABSOLUTE_START</code> and <code>ABSOLUTE_RANGE</code> need a start
+ *   Location that this config does not carry, and are ignored; seeking
+ *   supplies its own Location and always subscribes absolutely.
+ *   <br>
  *   Defaults to <code>shaka.config.MsfFilterType.LARGEST_OBJECT</code>.
  * @property {shaka.config.MsfVersion} version
  *   MoQ version used in the connection.

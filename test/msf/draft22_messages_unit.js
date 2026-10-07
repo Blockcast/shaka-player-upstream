@@ -110,6 +110,20 @@ filterDescribe('shaka.msf.draft22.MessageWriter', isMSFSupported, () => {
           .toEqual([0x02, 0x07, 0x03]);
     });
 
+    it('should encode Next Group Start as Relative Start 0', () => {
+      // Draft-20 spells this as the one-field relative form, StartGroup=0.
+      // Draft-22 numbers its Filter Types by field count, so the same
+      // request is the type 0x01 Relative Start carrying that same zero.
+      // The choice is made once, in the draft-20 writer, and reaches this
+      // draft through locationFilterValue() rather than a second copy.
+      const param = writer.locationFilterParam(
+          null, shaka.config.MsfFilterType.NEXT_GROUP_START);
+
+      expect(param.type).toBe(BigInt(0x21));
+      expect(Array.from(/** @type {!Uint8Array} */(param.value)))
+          .toEqual([0x01, 0x00]);
+    });
+
     it('should frame SUBSCRIBE\'s filter without a length', () => {
       writer.marshalSubscribe({
         requestId: BigInt(4),
