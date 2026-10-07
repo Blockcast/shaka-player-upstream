@@ -567,6 +567,8 @@ filterDescribe('shaka.msf.MSFParser', isMSFSupported, () => {
     let objectCallbacks;
     /** @type {!jasmine.Spy} */
     let unsubscribeSpy;
+    /** @type {!jasmine.Spy} */
+    let segmenterReleaseSpy;
 
     /**
      * @return {!shaka.extern.MsfSegment}
@@ -633,12 +635,24 @@ filterDescribe('shaka.msf.MSFParser', isMSFSupported, () => {
       return parser.videoStreams_[0];
     }
 
+    /**
+     * Restarts the one stream's subscription, as an ABR variant switch and a
+     * refused start Location both do.
+     *
+     * @suppress {visibility}
+     */
+    function resubscribe() {
+      parser.resubscribe_(parser.activeStreams_.get('/video0'),
+          /* startLocation= */ null);
+    }
+
     beforeEach(() => {
       nextSegments = [];
       pendingSubscribes = [];
       objectCallbacks = [];
       unsubscribeSpy = jasmine.createSpy('unsubscribeTrack')
           .and.returnValue(Promise.resolve());
+      segmenterReleaseSpy = jasmine.createSpy('release');
 
       shaka.msf.PackagingRegistry.registerPackaging(PACKAGING, () => {
         return /** @type {!shaka.extern.MsfPackaging} */ (/** @type {?} */ ({
@@ -649,7 +663,10 @@ filterDescribe('shaka.msf.MSFParser', isMSFSupported, () => {
             }),
             initSegmentReference: null,
           }),
-          createSegmenter: () => ({push: () => nextSegments}),
+          createSegmenter: () => ({
+            push: () => nextSegments,
+            release: shaka.test.Util.spyFunc(segmenterReleaseSpy),
+          }),
         }));
       });
     });
@@ -677,6 +694,41 @@ filterDescribe('shaka.msf.MSFParser', isMSFSupported, () => {
       callback(fakeObject(0));
       expect(() => callback(fakeObject(1))).not.toThrow();
       expect(stream.segmentIndex).toBeNull();
+    });
+
+    it('releases the segmenter when the segment index closes', () => {
+      // A segmenter is created per segment index. Before it was held on the
+      // stream state it was a closure-local of startSubscription_(), so
+      // nothing could let go of whatever it owned.
+      const stream = makeStream();
+      stream.createSegmentIndex();
+      expect(segmenterReleaseSpy).not.toHaveBeenCalled();
+
+      stream.closeSegmentIndex();
+      expect(segmenterReleaseSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases the previous segmenter when a subscription restarts', () => {
+      // resubscribe_() runs on every ABR variant switch, not only at
+      // shutdown, so a segmenter holding a worker leaked once per switch.
+      const stream = makeStream();
+      stream.createSegmentIndex();
+
+      resubscribe();
+      expect(segmenterReleaseSpy).toHaveBeenCalledTimes(1);
+
+      resubscribe();
+      expect(segmenterReleaseSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('releases the segmenter of a stream still open at stop()', async () => {
+      // closeSegmentIndex() is never called on a stream that is torn down
+      // with the parser, so stop() is its only release path.
+      const stream = makeStream();
+      stream.createSegmentIndex();
+
+      await parser.stop();
+      expect(segmenterReleaseSpy).toHaveBeenCalledTimes(1);
     });
 
     it('withdraws a subscription that closed before SUBSCRIBE_OK', async () => {
@@ -814,7 +866,10 @@ filterDescribe('shaka.msf.MSFParser', isMSFSupported, () => {
             }),
             initSegmentReference: null,
           }),
-          createSegmenter: () => ({push: () => nextSegments}),
+          createSegmenter: () => ({
+            push: () => nextSegments,
+            release: () => {},
+          }),
         }));
       });
     });
