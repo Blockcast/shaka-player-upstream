@@ -171,6 +171,7 @@ describe('VideoFrameCallbackHandler', () => {
       handler.start(() => handler.release());
       fireLastRegisteredCallback();
 
+      // Handle 2 is the successor, registered before the callback ran.
       expect(mockVideo.cancelVideoFrameCallback).toHaveBeenCalledOnceWith(2);
     });
 
@@ -186,6 +187,9 @@ describe('VideoFrameCallbackHandler', () => {
         handler.start(shaka.test.Util.spyFunc(secondCallbackSpy));
       });
       fireLastRegisteredCallback();
+      // registeredCallbacks[1] (handle 2) is the successor the first loop
+      // registered before invoking its callback. registeredCallbacks[2] is the
+      // new loop's first registration.
       const staleSuccessor = registeredCallbacks[1];
 
       staleSuccessor(200, null);
@@ -207,6 +211,8 @@ describe('VideoFrameCallbackHandler', () => {
       fireLastRegisteredCallback();
       handler.release();
 
+      // Cancelling the fired handle would be a no-op per spec. This only
+      // checks that release() does not try.
       expect(callbackSpy).toHaveBeenCalledTimes(1);
       expect(mockVideo.requestVideoFrameCallback).toHaveBeenCalledTimes(1);
       expect(mockVideo.cancelVideoFrameCallback).not.toHaveBeenCalled();
