@@ -3175,6 +3175,50 @@ describe('Player', () => {
           expect(current.id).toBe(targetId);
         });
 
+    it('lets ABR make its initial choice when the streaming event selects ' +
+        'a variant', async () => {
+      await player.unload();
+      player.configure('abr.enabled', true);
+      abrManager.chooseVariant.calls.reset();
+      streamingEngine.switchVariant.calls.reset();
+      const targetId = 101;
+      const onStreaming = () => {
+        player.removeEventListener('streaming', onStreaming);
+        const target = player.getVariantTracks().find(
+            (track) => track.id == targetId);
+        goog.asserts.assert(target, 'target track must be available');
+        player.selectVariantTrack(target);
+      };
+      player.addEventListener('streaming', onStreaming);
+
+      await player.load(fakeManifestUri, 0, fakeMimeType);
+
+      // The AbrManager blocks adaptation until it has made an initial
+      // choice (see #10045), so it must be asked even though the selection
+      // from the event is what gets played.
+      expect(abrManager.chooseVariant).toHaveBeenCalled();
+      expect(streamingEngine.switchVariant).toHaveBeenCalledTimes(1);
+      const selected = streamingEngine.switchVariant.calls.argsFor(0)[0];
+      expect(selected.id).toBe(targetId);
+    });
+
+    it('does not warn about ABR when the streaming event selects a variant',
+        async () => {
+          await player.unload();
+          player.configure('abr.enabled', true);
+          logWarnSpy.calls.reset();
+          const onStreaming = () => {
+            player.removeEventListener('streaming', onStreaming);
+            player.selectVariantTrack(player.getVariantTracks()[0]);
+          };
+          player.addEventListener('streaming', onStreaming);
+
+          await player.load(fakeManifestUri, 0, fakeMimeType);
+
+          expect(logWarnSpy).not.toHaveBeenCalledWith(
+              jasmine.stringMatching('Changing tracks while abr manager'));
+        });
+
     it('sets up the playhead for a streaming-event selection at a ' +
         'segment boundary', async () => {
       await player.unload();
