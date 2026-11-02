@@ -8,7 +8,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: default
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -94,7 +94,7 @@ jobs:
   # someone merging the release PR.  They all run in parallel.
 
   compute-latest:
-    runs-on: ubuntu-latest
+    runs-on: default
     needs: release
     if: needs.release.outputs.release_created
     outputs:
@@ -130,7 +130,7 @@ jobs:
           echo "Is latest: $IS_LATEST"
 
   tag-main:
-    runs-on: ubuntu-latest
+    runs-on: default
     needs: release
     if: needs.release.outputs.release_created && needs.release.outputs.patch != '0'
     steps:
@@ -251,7 +251,7 @@ jobs:
         run: gh release upload --clobber "${{ needs.release.outputs.tag_name }}" "$(cat tarball)"
 
   demo-release:
-    runs-on: ubuntu-latest
+    runs-on: default
     needs: [release, compute-latest]
     if: needs.compute-latest.outputs.is_latest == 'true'
     steps:
@@ -315,7 +315,7 @@ jobs:
           git push origin HEAD:main
 
   auto-branch:
-    runs-on: ubuntu-latest
+    runs-on: default
     needs: release
     if: needs.release.outputs.release_created && needs.release.outputs.patch == '0'
     steps:

@@ -14,7 +14,7 @@ on:
 jobs:
   compute-sha:
     name: Compute SHA
-    runs-on: ubuntu-latest
+    runs-on: arc-light
     outputs:
       SHA: ${{ steps.compute.outputs.SHA }}
 
@@ -28,7 +28,7 @@ jobs:
   set-pending-status:
     name: Set Pending Status
     needs: compute-sha
-    runs-on: ubuntu-latest
+    runs-on: arc-light
 
     permissions:
       # "Write" to statuses to update commit status
@@ -66,7 +66,7 @@ jobs:
 
   commit-new-screenshots:
     name: Commit New Screenshots
-    runs-on: ubuntu-latest
+    runs-on: default
     needs: [compute-sha, run-lab-tests]
     # NOTE: NO PERMISSIONS ON THIS JOB.  It runs PR-author-controlled code from
     # the PR, and so must be untrusted!
@@ -125,7 +125,7 @@ jobs:
 
   manage-pr:
     name: Manage PR
-    runs-on: ubuntu-latest
+    runs-on: default
     needs: [compute-sha, commit-new-screenshots]
 
     # NOTE: No granular permissions here, because we use SHAKA_BOT_TOKEN
@@ -222,7 +222,7 @@ jobs:
 
   set-final-status:
     name: Set Final Status
-    runs-on: ubuntu-latest
+    runs-on: arc-light
 
     permissions:
       # "Write" to statuses to update commit status

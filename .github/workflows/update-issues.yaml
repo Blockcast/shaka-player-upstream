@@ -10,7 +10,7 @@ on:
 
 jobs:
   update-issues:
-    runs-on: ubuntu-latest
+    runs-on: default
 
     permissions:
       # "Write" to Issues to add labels, post comments, lock, close, etc.

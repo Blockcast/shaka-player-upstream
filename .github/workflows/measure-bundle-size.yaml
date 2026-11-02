@@ -12,7 +12,11 @@ concurrency:
 
 jobs:
   build-head:
-    runs-on: ubuntu-latest
+    # A public fork PR must never execute its candidate tree on privileged ARC.
+    # Skipping is intentional because the repository policy permits no hosted
+    # fallback outside trusted npm publishing.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: default
 
     steps:
       - name: Checkout PR branch
@@ -48,7 +52,8 @@ jobs:
           path: head-sizes.json
 
   build-base:
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: default
 
     steps:
       - name: Checkout base branch
@@ -84,7 +89,8 @@ jobs:
           path: base-sizes.json
 
   compare:
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: arc-light
     needs: [build-head, build-base]
 
     steps:
