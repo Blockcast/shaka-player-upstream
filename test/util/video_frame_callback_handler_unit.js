@@ -140,6 +140,41 @@ describe('VideoFrameCallbackHandler', () => {
               .toHaveBeenCalledTimes(3);
         });
 
+    it('does not cancel a consumed handle when released in once mode', () => {
+      mockVideo = createMockVideoWithRVFC();
+      handler = new VideoFrameCallbackHandler(mockVideo);
+
+      handler.start(() => {}, /* once= */ true);
+      fireLastRegisteredCallback();
+      handler.release();
+
+      expect(mockVideo.cancelVideoFrameCallback).not.toHaveBeenCalled();
+    });
+
+    it('does not cancel a consumed handle when released from the callback',
+        () => {
+          mockVideo = createMockVideoWithRVFC();
+          handler = new VideoFrameCallbackHandler(mockVideo);
+
+          handler.start(() => handler.release());
+          fireLastRegisteredCallback();
+
+          expect(mockVideo.cancelVideoFrameCallback).not.toHaveBeenCalled();
+          expect(mockVideo.requestVideoFrameCallback).toHaveBeenCalledTimes(1);
+        });
+
+    it('does not cancel a consumed handle when restarted from the callback',
+        () => {
+          mockVideo = createMockVideoWithRVFC();
+          handler = new VideoFrameCallbackHandler(mockVideo);
+
+          handler.start(() => handler.start(() => {}));
+          fireLastRegisteredCallback();
+
+          expect(mockVideo.cancelVideoFrameCallback).not.toHaveBeenCalled();
+          expect(mockVideo.requestVideoFrameCallback).toHaveBeenCalledTimes(2);
+        });
+
     it('does not re-register if start is called again mid-loop', () => {
       mockVideo = createMockVideoWithRVFC();
       handler = new VideoFrameCallbackHandler(mockVideo);
