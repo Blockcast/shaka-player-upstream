@@ -15,7 +15,7 @@ on:
 
 jobs:
   sync-labels:
-    runs-on: ubuntu-latest
+    runs-on: arc-light
 
     permissions:
       # "Write" to Issues to manage labels for the repo

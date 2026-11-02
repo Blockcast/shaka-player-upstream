@@ -56,7 +56,7 @@ on:
 jobs:
   compute-sha:
     name: Compute SHA
-    runs-on: ubuntu-latest
+    runs-on: arc-light
     outputs:
       SHA: ${{ steps.compute.outputs.SHA }}
 
@@ -76,7 +76,7 @@ jobs:
   matrix-config:
     name: Matrix config
     needs: compute-sha
-    runs-on: ubuntu-latest
+    runs-on: default
     outputs:
       INCLUDE: ${{ steps.configure.outputs.INCLUDE }}
 
@@ -145,7 +145,7 @@ jobs:
   build-shaka:
     name: Pre-build Player
     needs: compute-sha
-    runs-on: ubuntu-latest
+    runs-on: default
 
     permissions:
       # "Write" to statuses to update commit status

@@ -25,7 +25,12 @@ concurrency:
 jobs:
   build:
     name: Build Player
-    runs-on: ubuntu-latest
+    # Public fork PRs must not execute fork-controlled code on privileged ARC
+    # runners. Same-repository PRs, pushes, schedules, and manual runs may use
+    # the on-prem pool; fork PRs are intentionally skipped under the no-hosted
+    # runner policy.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: default
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -50,92 +55,36 @@ jobs:
 
   build_and_test:
     needs: build
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     strategy:
+      # Keep browser coverage on the Linux ARC pool; hosted OS runners are not
+      # part of this repository's CI budget.
       matrix:
         include:
-          # Run Linux browsers with xvfb, so they're in a headless X session.
-          # Additionally, generate a code coverage report from Linux Chrome.
-          # It should be the uncompiled build, or else we won't execute any
-          # coverage instrumentation on full-stack player integration tests.
-          - os: ubuntu-latest
-            browser: Chrome
+          # Cross-OS coverage is paused while this fork runs exclusively on
+          # Linux ARC. Chrome, Firefox, Edge, and Opera remain covered.
+          - browser: Chrome
             extra_flags: "--use-xvfb --running_in_vm"
-          - os: ubuntu-latest
-            browser: Firefox
+          - browser: Firefox
             extra_flags: "--use-xvfb --running_in_vm"
-          - os: ubuntu-latest
-            browser: Edge
+          - browser: Edge
+            extra_flags: "--html-coverage-report --uncompiled --use-xvfb --running_in_vm"
+          - browser: Opera
             extra_flags: "--use-xvfb --running_in_vm"
-          - os: ubuntu-latest
-            browser: Opera
-            extra_flags: "--use-xvfb --running_in_vm"
-
-          - os: macos-latest
-            browser: Chrome
-            extra_flags: "--running_in_vm"
-          - os: macos-latest
-            browser: Edge
-            extra_flags: "--running_in_vm"
-          - os: macos-latest
-            browser: Opera
-            extra_flags: "--running_in_vm"
-          - os: macos-latest
-            browser: Firefox
-            extra_flags: "--running_in_vm"
-          - os: macos-latest
-            browser: Safari
-            extra_flags: "--running_in_vm"
-
-          - os: windows-latest
-            browser: Chrome
-            extra_flags: "--running_in_vm"
-          - os: windows-latest
-            browser: Firefox
-            extra_flags: "--running_in_vm"
-          - os: windows-latest
-            browser: Edge
-            extra_flags: "--html-coverage-report --uncompiled --running_in_vm"
-          - os: windows-latest
-            browser: Opera
-            extra_flags: "--running_in_vm"
 
       # Disable fail-fast so that one matrix-job failing doesn't make the other
       # ones end early.
       fail-fast: false
 
-    name: ${{ matrix.os }} ${{ matrix.browser }}
-    runs-on: ${{ matrix.os }}
+    name: Linux ${{ matrix.browser }}
+    runs-on: default
 
     steps:
-      # Firefox on Ubuntu appears to not have the right things installed in
-      # the environment used by GitHub actions, so make sure that ffmpeg is
-      # installed. Otherwise, the browser might not support some codecs that the
-      # tests assume will be supported.
-      - name: Install FFmpeg
-        timeout-minutes: 5
-        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'Firefox'
-        run: sudo apt -y update && sudo apt -y install ffmpeg
-
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
-
-      # When "Chrome for Testing" is installed on Mac or Windows, it gets
-      # invoked instead of simply "Chrome".  This other copy of Chrome,
-      # however, doesn't seem to have basic codecs like AAC and H264 available,
-      # causing many of our test scenarios to fail.  Deleting "Chrome for
-      # Testing" fixes this.
-      - name: 'Delete "Chrome for Testing" on Mac'
-        timeout-minutes: 5
-        if: matrix.os == 'macos-latest' && matrix.browser == 'Chrome'
-        run: sudo rm -rf /Applications/Google\ Chrome\ for\ Testing.app
-      - name: 'Overwrite "Chrome for Testing" on Windows'
-        timeout-minutes: 5
-        if: matrix.os == 'windows-latest' && matrix.browser == 'Chrome'
-        shell: bash
-        run: choco install -y googlechrome --ignore-checksums
 
       # The Ubuntu CI image ships Edge with every file under /opt/microsoft
       # made world-writable, which strips the setuid bit from Edge's sandbox
@@ -144,37 +93,11 @@ jobs:
       # ownership and mode the package expects.
       - name: 'Fix Edge sandbox on Ubuntu'
         timeout-minutes: 5
-        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'Edge'
+        if: matrix.browser == 'Edge'
         run: |
           sudo chown root:root /opt/microsoft/msedge/msedge-sandbox
           sudo chmod 4755 /opt/microsoft/msedge/msedge-sandbox
 
-      - name: 'Install Opera on Ubuntu'
-        timeout-minutes: 5
-        if: matrix.os == 'ubuntu-latest' && matrix.browser == 'Opera'
-        run: sudo apt -y update && sudo apt -y install snapd && sudo snap install opera
-
-      - name: 'Install Opera on Windows'
-        timeout-minutes: 5
-        if: matrix.os == 'windows-latest' && matrix.browser == 'Opera'
-        run: choco install -y opera --ignore-checksums --params '"/NoAutostart /NoDesktopShortcut /NoTaskbarShortcut"'
-
-      # Firefox, Edge and Opera might be missing on Mac CI images.
-      - name: 'Install Firefox on Mac'
-        timeout-minutes: 5
-        if: matrix.os == 'macos-latest' && matrix.browser == 'Firefox'
-        run: brew install --cask firefox
-      - name: 'Install Edge on Mac'
-        timeout-minutes: 5
-        if: matrix.os == 'macos-latest' && matrix.browser == 'Edge'
-        run: brew install --cask microsoft-edge
-      - name: 'Install Opera on Mac'
-        timeout-minutes: 5
-        if: matrix.os == 'macos-latest' && matrix.browser == 'Opera'
-        run: brew install --cask opera
-
-      # Some CI images (self-hosted or otherwise) don't have the minimum Java
-      # version necessary for the compiler (Java 21).
       - name: Download build artifact
         uses: actions/download-artifact@v7
         with:
@@ -238,7 +161,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: ${{ failure() }}
         with:
-          name: screenshots-${{ matrix.browser }}-${{ matrix.os }}
+          name: screenshots-${{ matrix.browser }}-linux
           path: |
             test/test/assets/screenshots/*/*.png-new
             test/test/assets/screenshots/*/*.png-diff
@@ -247,7 +170,8 @@ jobs:
 
   build_in_docker:
     name: Docker
-    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: arc-default
     steps:
       - name: Checkout code
         uses: actions/checkout@v5

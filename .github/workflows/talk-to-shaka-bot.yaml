@@ -13,7 +13,7 @@ jobs:
     # made by shaka-bot itself, who will sometimes use its own name.
     # Note that contains() is not case sensitive.
     if: github.event.issue.pull_request && contains(github.event.comment.body, '@shaka-bot') && github.event.comment.user.login != 'shaka-bot'
-    runs-on: [ubuntu-latest]
+    runs-on: [arc-light]
     env:
       # This token must have "repo" scope, "org:read" scope, and write access.
       GH_TOKEN: ${{ secrets.SHAKA_BOT_TOKEN }}
