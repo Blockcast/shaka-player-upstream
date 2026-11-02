@@ -210,6 +210,42 @@ describe('VideoFrameCallbackHandler', () => {
       expect(callbackSpy).not.toHaveBeenCalled();
     });
 
+    it('does not cancel the consumed handle of a once callback', () => {
+      mockVideo = createMockVideoWithRVFC();
+      handler = new VideoFrameCallbackHandler(mockVideo);
+
+      handler.start(() => {}, /* once= */ true);
+      registeredCallbacks[0](100, null);
+      handler.release();
+
+      expect(mockVideo.cancelVideoFrameCallback).not.toHaveBeenCalled();
+    });
+
+    it('does not cancel the consumed handle after a callback throws', () => {
+      mockVideo = createMockVideoWithRVFC();
+      handler = new VideoFrameCallbackHandler(mockVideo);
+
+      handler.start(() => {
+        throw new Error('callback failure');
+      });
+      expect(() => registeredCallbacks[0](100, null)).toThrow();
+      handler.release();
+
+      expect(mockVideo.cancelVideoFrameCallback).not.toHaveBeenCalled();
+    });
+
+    it('cancels the pending handle of a looping callback', () => {
+      mockVideo = createMockVideoWithRVFC();
+      handler = new VideoFrameCallbackHandler(mockVideo);
+
+      handler.start(() => {});
+      registeredCallbacks[0](100, null);
+      handler.release();
+
+      // Handle 1 fired and was consumed; handle 2 is the pending successor.
+      expect(mockVideo.cancelVideoFrameCallback).toHaveBeenCalledOnceWith(2);
+    });
+
     it('stops re-registration of callback after release', () => {
       mockVideo = createMockVideoWithRVFC();
       handler = new VideoFrameCallbackHandler(mockVideo);
