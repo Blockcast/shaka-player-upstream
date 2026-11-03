@@ -24,6 +24,7 @@ concurrency:
 
 jobs:
   build:
+    timeout-minutes: 120
     name: Build Player
     # Public fork PRs must not execute fork-controlled code on privileged ARC
     # runners. Same-repository PRs, pushes, schedules, and manual runs may use
@@ -54,6 +55,7 @@ jobs:
           path: dist/
 
   build_and_test:
+    timeout-minutes: 120
     needs: build
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     strategy:
@@ -169,6 +171,7 @@ jobs:
           retention-days: 5
 
   build_in_docker:
+    timeout-minutes: 120
     name: Docker
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: arc-default

@@ -15,6 +15,7 @@ on:
 
 jobs:
   sync-labels:
+    timeout-minutes: 60
     runs-on: {group: default-tools, labels: arc-light}
 
     permissions:

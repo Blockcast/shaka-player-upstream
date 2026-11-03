@@ -10,6 +10,7 @@ on:
 
 jobs:
   update-issues:
+    timeout-minutes: 20
     runs-on: default
 
     permissions:

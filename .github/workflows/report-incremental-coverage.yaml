@@ -10,6 +10,7 @@ on:
 
 jobs:
   report:
+    timeout-minutes: 60
     if: ${{ github.event.workflow_run.event == 'pull_request' }}
     runs-on: {group: default-tools, labels: arc-light}
 

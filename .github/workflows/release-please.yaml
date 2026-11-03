@@ -8,6 +8,7 @@ on:
 
 jobs:
   release:
+    timeout-minutes: 60
     runs-on: default
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -94,6 +95,7 @@ jobs:
   # someone merging the release PR.  They all run in parallel.
 
   compute-latest:
+    timeout-minutes: 60
     runs-on: default
     needs: release
     if: needs.release.outputs.release_created
@@ -130,6 +132,7 @@ jobs:
           echo "Is latest: $IS_LATEST"
 
   tag-main:
+    timeout-minutes: 60
     runs-on: default
     needs: release
     if: needs.release.outputs.release_created && needs.release.outputs.patch != '0'
@@ -251,6 +254,7 @@ jobs:
         run: gh release upload --clobber "${{ needs.release.outputs.tag_name }}" "$(cat tarball)"
 
   demo-release:
+    timeout-minutes: 60
     runs-on: default
     needs: [release, compute-latest]
     if: needs.compute-latest.outputs.is_latest == 'true'
@@ -315,6 +319,7 @@ jobs:
           git push origin HEAD:main
 
   auto-branch:
+    timeout-minutes: 60
     runs-on: default
     needs: release
     if: needs.release.outputs.release_created && needs.release.outputs.patch == '0'

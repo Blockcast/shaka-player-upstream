@@ -13,6 +13,7 @@ on:
 
 jobs:
   compute-sha:
+    timeout-minutes: 60
     name: Compute SHA
     runs-on: {group: default-tools, labels: arc-light}
     outputs:
@@ -26,6 +27,7 @@ jobs:
           ref: ${{ inputs.pr && format('refs/pull/{0}/head', inputs.pr) || 'refs/heads/main' }}
 
   set-pending-status:
+    timeout-minutes: 60
     name: Set Pending Status
     needs: compute-sha
     runs-on: {group: default-tools, labels: arc-light}
@@ -65,6 +67,7 @@ jobs:
       job_name_prefix: "Get Selenium Lab Screenshots / "
 
   commit-new-screenshots:
+    timeout-minutes: 60
     name: Commit New Screenshots
     runs-on: default
     needs: [compute-sha, run-lab-tests]
@@ -124,6 +127,7 @@ jobs:
         if: failure()
 
   manage-pr:
+    timeout-minutes: 60
     name: Manage PR
     runs-on: default
     needs: [compute-sha, commit-new-screenshots]
@@ -221,6 +225,7 @@ jobs:
         if: failure()
 
   set-final-status:
+    timeout-minutes: 60
     name: Set Final Status
     runs-on: {group: default-tools, labels: arc-light}
 
