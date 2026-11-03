@@ -44,6 +44,12 @@ shaka.test.LayoutTests = class {
       });
     });
 
+    // FontFaceOnload resolves as soon as ANY face of the family loads.  Google
+    // Fonts serves Roboto as nine unicode-range subsets, so the first one to
+    // arrive (e.g. cyrillic-ext) can win while the latin subset that the cue
+    // text actually needs is still downloading.  Wait for every pending face.
+    await document.fonts.ready;
+
     // Wait one extra second to make sure the font rendering on the page has
     // been updated.  Without this, we saw some rare test flake in Firefox on
     // Mac.
