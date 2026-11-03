@@ -56,7 +56,7 @@ on:
 jobs:
   compute-sha:
     name: Compute SHA
-    runs-on: arc-light
+    runs-on: {group: default-tools, labels: arc-light}
     outputs:
       SHA: ${{ steps.compute.outputs.SHA }}
 
