@@ -14,7 +14,7 @@ on:
 jobs:
   deflake:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
-    runs-on: arc-light
+    runs-on: {group: default-tools, labels: arc-light}
 
     permissions:
       # "Write" to Actions to enable rerun command.
