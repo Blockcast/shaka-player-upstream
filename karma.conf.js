@@ -126,6 +126,18 @@ module.exports = (config) => {
     });
   }
 
+  // Fork (BLO-51811): ARC runner pods get containerd's 64 MiB /dev/shm, and
+  // non-headless Opera exhausts it ("Failed to fetch", GPU process SIGTRAP).
+  // The headless launchers already pass this flag; Opera does not.
+  config.set({
+    customLaunchers: Object.assign({
+      OperaNoDevShm: {
+        base: 'Opera',
+        config: {'goog:chromeOptions': {args: ['--disable-dev-shm-usage']}},
+      },
+    }, config.customLaunchers),
+  });
+
   if (settings.browsers && settings.browsers.length == 1 &&
       settings.browsers[0] == 'help') {
     console.log('Available browsers:');
