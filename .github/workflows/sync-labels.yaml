@@ -15,7 +15,9 @@ on:
 
 jobs:
   sync-labels:
-    runs-on: {group: default-tools, labels: arc-light}
+    runs-on:
+      group: default-tools
+      labels: arc-light
 
     permissions:
       # "Write" to Issues to manage labels for the repo
