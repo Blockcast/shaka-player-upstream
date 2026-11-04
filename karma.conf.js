@@ -126,8 +126,9 @@ module.exports = (config) => {
     });
   }
 
-  // Fork (BLO-51811): ARC runner pods get the container runtime's 64 MiB /dev/shm, and
-  // non-headless Opera exhausts it ("Failed to fetch", GPU process SIGTRAP).
+  // Fork (BLO-51811): ARC runner pods get the container runtime's 64 MiB
+  // /dev/shm, and non-headless Opera exhausts it ("Failed to fetch", GPU
+  // process SIGTRAP).
   // The headless launchers already pass this flag; Opera does not.
   config.set({
     customLaunchers: Object.assign({
