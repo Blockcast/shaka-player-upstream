@@ -107,7 +107,9 @@ jobs:
           path: dist/
 
       - name: Test Player
-        timeout-minutes: 25
+        # Fork runners (ARC) measured 17-25 min with setup+bundle+tests (BLO-51683);
+        # upstream 25 left no margin.
+        timeout-minutes: 45
         shell: bash
         run: |
           browser=${{ matrix.browser }}

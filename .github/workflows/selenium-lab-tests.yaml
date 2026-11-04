@@ -57,6 +57,11 @@ jobs:
   compute-sha:
     timeout-minutes: 60
     name: Compute SHA
+    # The lab-tests job needs runner label self-hosted-selenium, which exists
+    # only in upstream's physical lab. No Blockcast runner serves it, so in
+    # this fork every job would sit QUEUED for GitHub's 24h ceiling (BLO-51667).
+    # Skipping here skips every dependent job via `needs:`.
+    if: github.repository == 'shaka-project/shaka-player'
     runs-on: {group: default-tools, labels: arc-light}
     outputs:
       SHA: ${{ steps.compute.outputs.SHA }}

@@ -15,7 +15,9 @@ jobs:
   compute-sha:
     timeout-minutes: 60
     name: Compute SHA
-    runs-on: {group: default-tools, labels: arc-light}
+    runs-on:
+      group: default-tools
+      labels: arc-light
     outputs:
       SHA: ${{ steps.compute.outputs.SHA }}
 
@@ -30,7 +32,9 @@ jobs:
     timeout-minutes: 60
     name: Set Pending Status
     needs: compute-sha
-    runs-on: {group: default-tools, labels: arc-light}
+    runs-on:
+      group: default-tools
+      labels: arc-light
 
     permissions:
       # "Write" to statuses to update commit status
@@ -227,7 +231,9 @@ jobs:
   set-final-status:
     timeout-minutes: 60
     name: Set Final Status
-    runs-on: {group: default-tools, labels: arc-light}
+    runs-on:
+      group: default-tools
+      labels: arc-light
 
     permissions:
       # "Write" to statuses to update commit status
