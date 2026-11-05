@@ -55,6 +55,7 @@ on:
 
 jobs:
   compute-sha:
+    timeout-minutes: 60
     name: Compute SHA
     # The lab-tests job needs runner label self-hosted-selenium, which exists
     # only in upstream's physical lab. No Blockcast runner serves it, so in
@@ -79,6 +80,7 @@ jobs:
   # The matrix contents will be computed by this first job and deserialized
   # into the second job's config.
   matrix-config:
+    timeout-minutes: 60
     name: Matrix config
     needs: compute-sha
     runs-on: default
@@ -148,6 +150,7 @@ jobs:
   # build matrix.  For N runners, runs N times faster (since all the
   # self-hosted Selenium jobs are run in containers on one machine).
   build-shaka:
+    timeout-minutes: 60
     name: Pre-build Player
     needs: compute-sha
     runs-on: default

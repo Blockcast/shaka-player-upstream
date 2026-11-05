@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   build-head:
+    timeout-minutes: 120
     # A public fork PR must never execute its candidate tree on privileged ARC.
     # Skipping is intentional because the repository policy permits no hosted
     # fallback outside trusted npm publishing.
@@ -52,6 +53,7 @@ jobs:
           path: head-sizes.json
 
   build-base:
+    timeout-minutes: 120
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: default
 
@@ -89,6 +91,7 @@ jobs:
           path: base-sizes.json
 
   compare:
+    timeout-minutes: 120
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: {group: default-tools, labels: arc-light}
     needs: [build-head, build-base]

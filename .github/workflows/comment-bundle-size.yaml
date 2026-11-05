@@ -9,6 +9,7 @@ on:
 
 jobs:
   comment:
+    timeout-minutes: 60
     runs-on: {group: default-tools, labels: arc-light}
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
