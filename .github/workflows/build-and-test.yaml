@@ -74,6 +74,8 @@ jobs:
           - browser: Edge
             extra_flags: "--html-coverage-report --uncompiled --use-xvfb --running_in_vm"
           - browser: Opera
+            # BLO-51811: same Opera, plus --disable-dev-shm-usage (karma.conf.js).
+            launcher: OperaNoDevShm
             extra_flags: "--use-xvfb --running_in_vm"
 
       # Disable fail-fast so that one matrix-job failing doesn't make the other
@@ -114,7 +116,7 @@ jobs:
         timeout-minutes: 45
         shell: bash
         run: |
-          browser=${{ matrix.browser }}
+          browser=${{ matrix.launcher || matrix.browser }}
 
           python3 build/test.py \
             --no-build \
