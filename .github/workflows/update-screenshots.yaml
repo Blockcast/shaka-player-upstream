@@ -15,9 +15,7 @@ jobs:
   compute-sha:
     timeout-minutes: 60
     name: Compute SHA
-    runs-on:
-      group: default-tools
-      labels: arc-light
+    runs-on: ubuntu-latest
     outputs:
       SHA: ${{ steps.compute.outputs.SHA }}
 
@@ -32,9 +30,7 @@ jobs:
     timeout-minutes: 60
     name: Set Pending Status
     needs: compute-sha
-    runs-on:
-      group: default-tools
-      labels: arc-light
+    runs-on: ubuntu-latest
 
     permissions:
       # "Write" to statuses to update commit status
@@ -73,7 +69,7 @@ jobs:
   commit-new-screenshots:
     timeout-minutes: 60
     name: Commit New Screenshots
-    runs-on: default
+    runs-on: ubuntu-latest
     needs: [compute-sha, run-lab-tests]
     # NOTE: NO PERMISSIONS ON THIS JOB.  It runs PR-author-controlled code from
     # the PR, and so must be untrusted!
@@ -133,7 +129,7 @@ jobs:
   manage-pr:
     timeout-minutes: 60
     name: Manage PR
-    runs-on: default
+    runs-on: ubuntu-latest
     needs: [compute-sha, commit-new-screenshots]
 
     # NOTE: No granular permissions here, because we use SHAKA_BOT_TOKEN
@@ -231,9 +227,7 @@ jobs:
   set-final-status:
     timeout-minutes: 60
     name: Set Final Status
-    runs-on:
-      group: default-tools
-      labels: arc-light
+    runs-on: ubuntu-latest
 
     permissions:
       # "Write" to statuses to update commit status
