@@ -26,12 +26,10 @@ jobs:
   build:
     timeout-minutes: 120
     name: Build Player
-    # Public fork PRs must not execute fork-controlled code on privileged ARC
-    # runners. Same-repository PRs, pushes, schedules, and manual runs may use
-    # the on-prem pool; fork PRs are intentionally skipped under the no-hosted
-    # runner policy.
+    # Fork PRs are skipped. This job is hosted (BLO-56666), but the gate still
+    # protects the ARC jobs that consume its output (build_in_docker, compare).
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: default
+    runs-on: ubuntu-latest  # BLO-56666: PR-triggered; public repo leaves org group 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -61,12 +59,10 @@ jobs:
     needs: build
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     strategy:
-      # Keep browser coverage on the Linux ARC pool; hosted OS runners are not
-      # part of this repository's CI budget.
+      # Linux browsers run on GitHub-hosted ubuntu-latest (BLO-56666).
       matrix:
         include:
-          # Cross-OS coverage is paused while this fork runs exclusively on
-          # Linux ARC. Chrome, Firefox, Edge, and Opera remain covered.
+          # Cross-OS (macOS/Windows) coverage is paused in this fork.
           - browser: Chrome
             extra_flags: "--use-xvfb --running_in_vm"
           - browser: Firefox
@@ -83,7 +79,7 @@ jobs:
       fail-fast: false
 
     name: Linux ${{ matrix.browser }}
-    runs-on: default
+    runs-on: ubuntu-latest  # BLO-56666: PR-triggered; public repo leaves org group 1
 
     steps:
       - name: Checkout code
@@ -91,6 +87,18 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
           persist-credentials: false
+
+      # Hosted Ubuntu lacks the codecs Firefox needs for the tests (upstream step).
+      - name: Install FFmpeg
+        timeout-minutes: 5
+        if: matrix.browser == 'Firefox'
+        run: sudo apt -y update && sudo apt -y install ffmpeg
+
+      # Hosted Ubuntu does not ship Opera (upstream step).
+      - name: 'Install Opera on Ubuntu'
+        timeout-minutes: 5
+        if: matrix.browser == 'Opera'
+        run: sudo apt -y update && sudo apt -y install snapd && sudo snap install opera
 
       # The Ubuntu CI image ships Edge with every file under /opt/microsoft
       # made world-writable, which strips the setuid bit from Edge's sandbox

@@ -13,11 +13,10 @@ concurrency:
 jobs:
   build-head:
     timeout-minutes: 120
-    # A public fork PR must never execute its candidate tree on privileged ARC.
-    # Skipping is intentional because the repository policy permits no hosted
-    # fallback outside trusted npm publishing.
+    # Fork PRs are skipped; this job is hosted since BLO-56666, but the gate is
+    # kept so the downstream ARC `compare` job never sees fork output.
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: default
+    runs-on: ubuntu-latest  # BLO-56666: PR-triggered; public repo leaves org group 1
 
     steps:
       - name: Checkout PR branch
@@ -55,7 +54,7 @@ jobs:
   build-base:
     timeout-minutes: 120
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    runs-on: default
+    runs-on: ubuntu-latest  # BLO-56666: PR-triggered; public repo leaves org group 1
 
     steps:
       - name: Checkout base branch
